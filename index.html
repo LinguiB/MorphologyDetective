@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Morpheme Detective</title>
+<style>
+:root{--bg:#FFF8EC;--card:#fff;--text:#1E1240;--muted:#5b5480;--line:#e6dcc8;--accent:#5b3fd1;--ghost:#efe4cc;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);color-scheme:light}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#1E1240;--card:#2D1F66;--text:#FFF8EC;--muted:#c9c0ee;--line:#463a8a;--accent:#FFD166;--ghost:#2E2269;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#1E1240;--card:#2D1F66;--text:#FFF8EC;--muted:#c9c0ee;--line:#463a8a;--accent:#FFD166;--ghost:#2E2269;color-scheme:dark}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font:16px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+.wrap{max-width:760px;margin:0 auto;padding:18px 16px 40px;position:relative}
+.ipa{position:absolute;right:12px;top:6px;font:34px Georgia,serif;color:var(--ghost);pointer-events:none;user-select:none}
+.kick{font-size:12px;letter-spacing:.2em;font-weight:700;color:var(--accent);text-transform:uppercase}
+h1{font:700 30px Georgia,serif;margin:2px 0 14px}
+h2{font:700 20px Georgia,serif;margin:0 0 6px}
+.tabs,.chips{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+button{font:inherit;cursor:pointer;color:inherit}
+.tab,.chip{border:2px solid var(--line);background:var(--card);border-radius:999px;padding:7px 16px;font-weight:600}
+.tab.on{background:var(--accent);border-color:var(--accent);color:#1E1240}
+.chip{padding:4px 12px;font-size:14px}.chip.on{border-color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent)}
+.card{background:var(--card);border:2px solid var(--line);border-radius:18px;padding:16px;margin-bottom:14px}
+.pill{display:inline-block;padding:5px 13px;border-radius:999px;font-weight:700;color:#1E1240;margin:3px 0}
+.P{background:#FF6B6B}.R{background:#2EC4B6}.B{background:#B388EB}.S{background:#FFD166}
+.plus{margin:0 6px;color:var(--muted);font-weight:700}
+.legend{display:flex;gap:10px;flex-wrap:wrap;margin:0 0 14px;font-size:14px}
+.legend span.pill{padding:2px 10px;font-size:13px}
+.grid{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(210px,1fr))}
+.big{font:700 34px Georgia,serif;margin:0 0 4px}
+.tags .pill{font-size:14px;padding:3px 11px;margin:3px 2px}
+.fc{min-height:190px;text-align:center;display:flex;flex-direction:column;justify-content:center;align-items:center;cursor:pointer;user-select:none}
+.fc .w{font:700 38px Georgia,serif;overflow-wrap:anywhere}.fc .pill{font-size:20px}
+.muted{color:var(--muted);font-size:14px}
+.bar{height:8px;border-radius:8px;background:var(--line);overflow:hidden;margin:6px 0 12px}.bar i{display:block;height:100%;background:#2EC4B6;transition:width .3s}
+.row{display:flex;gap:10px;flex-wrap:wrap}
+.btn{border:2px solid var(--accent);background:var(--accent);color:#1E1240;font-weight:700;border-radius:12px;padding:9px 18px}
+.btn.alt{background:transparent;color:var(--text);border-color:var(--line)}.btn:disabled{opacity:.4;cursor:default}
+.parts{display:flex;gap:14px;flex-wrap:wrap;margin:10px 0}
+.part{display:flex;flex-direction:column;gap:5px;min-width:112px;flex:1 1 112px;max-width:170px}
+.part .pill{text-align:center;font-size:19px;background:var(--ghost);color:var(--text)}
+.part button{border:2px solid var(--line);background:var(--card);border-radius:10px;padding:5px 6px;font-size:14px;font-weight:600}
+.part button.sel{border-color:var(--accent);box-shadow:inset 0 0 0 2px var(--accent)}
+.part button.ok{background:#2EC4B6;color:#1E1240;border-color:#2EC4B6}.part button.bad{background:#FF6B6B;color:#1E1240;border-color:#FF6B6B}
+.fb{border-left:5px solid var(--accent);padding:6px 12px;margin:10px 0;background:var(--ghost);border-radius:8px}
+.stats{display:flex;gap:16px;font-weight:700;margin-bottom:8px}
+</style></head><body><div class="wrap">
+<div class="ipa">ə ʃ θ ŋ</div>
+<div class="kick">Linguistics · Morphology</div>
+<h1>Morpheme Detective</h1>
+<div class="tabs" id="tabs"></div>
+<div class="chips" id="chips"></div>
+<div id="view"></div>
+</div>
+<script>
+const L={P:"Prefix",R:"Free root",B:"Bound root",S:"Suffix"};
+const WHY={P:"it can't stand alone and attaches at the front.",R:"it has meaning and can stand alone.",B:"it's a Latin chunk with meaning that can't stand alone in English.",S:"it can't stand alone and attaches at the end."};
+const CATS={all:"All words",c:"Compounds",l:"Latin roots",s:"Suffixes",p:"Prefixes"};
+const raw=[
+["thunderstorm","thunder:R,storm:R","c"],["weekend","week:R,end:R","c"],["classroom","class:R,room:R","c"],["bedroom","bed:R,room:R","c"],["notebook","note:R,book:R","c"],["sunflower","sun:R,flower:R","c"],["toothbrush","tooth:R,brush:R","c"],["football","foot:R,ball:R","c"],["rainbow","rain:R,bow:R","c"],["homework","home:R,work:R","c"],["bookshelf","book:R,shelf:R","c"],["raincoat","rain:R,coat:R","c"],["airport","air:R,port:R","c"],["birthday","birth:R,day:R","c"],["snowman","snow:R,man:R","c"],["moonlight","moon:R,light:R","c"],["butterfly","butter:R,fly:R","c"],
+["reduce","re-:P,-duce:B","l"],["concept","con-:P,-cept:B","l"],["introduce","intro-:P,-duce:B","l"],["receive","re-:P,-ceive:B","l"],["nation","-nat:B,-ion:S","l"],
+["conclusion","con-:P,-clude:B,-sion:S","s"],["reception","re-:P,-cept:B,-ion:S","s"],["happiness","happy:R,-ness:S","s"],["actor","act:R,-or:S","s"],["management","manage:R,-ment:S","s"],["friendship","friend:R,-ship:S","s"],["sisterhood","sister:R,-hood:S","s"],["happened","happen:R,-ed:S","s"],["liked","like:R,-ed:S","s"],["tasks","task:R,-s:S","s"],["cries","cry:R,-es:S","s"],["largest","large:R,-est:S","s"],["controllable","control:R,-able:S","s"],["active","act:R,-ive:S","s"],
+["rewrite","re-:P,write:R","p"],["introvert","intro-:P,-vert:B","p"],["postwar","post-:P,war:R","p"],["overreact","over-:P,re-:P,act:R","p"],["international","inter-:P,-nat:B,-ion:S,-al:S","p"],["transform","trans-:P,form:R","p"],["cowork","co-:P,work:R","p"],["disagree","dis-:P,agree:R","p"],["trilingual","tri-:P,-lingu:B,-al:S","p"],["bilingual","bi-:P,-lingu:B,-al:S","p"],["prewar","pre-:P,war:R","p"],["subvert","sub-:P,-vert:B","p"],["underestimate","under-:P,estimate:R","p"],["inhale","in-:P,hale:B","p"],["multitask","multi-:P,task:R","p"],["extracurricular","extra-:P,-curricul:B,-ar:S","p"],["supermarket","super-:P,market:R","p"],["enjoy","en-:P,joy:R","p"],["proactive","pro-:P,act:R,-ive:S","p"]];
+const D=raw.map(([w,p,c])=>({w,c,parts:p.split(",").map(x=>{const i=x.lastIndexOf(":");return[x.slice(0,i),x.slice(i+1)]})}));
+const $=id=>document.getElementById(id);
+const shuffle=a=>{a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a};
+const pills=ps=>ps.map(([t,k])=>`<span class="pill ${k}">${t}</span>`).join('<span class="plus">+</span>');
+const legend=()=>`<div class="legend">${Object.keys(L).map(k=>`<span class="pill ${k}">${L[k]}</span>`).join("")}</div>`;
+let tab="rules",cat="all";
+const pool=()=>D.filter(d=>cat==="all"||d.c===cat);
+function nav(){
+  $("tabs").innerHTML=[["rules","📖 Rules"],["cards","🃏 Flashcards"],["practice","🎯 Practice"]].map(([k,t])=>`<button class="tab ${tab===k?"on":""}" onclick="go('${k}')">${t}</button>`).join("");
+  $("chips").innerHTML=tab==="rules"?"":Object.keys(CATS).map(k=>`<button class="chip ${cat===k?"on":""}" onclick="setCat('${k}')">${CATS[k]}</button>`).join("");
+}
+function go(t){tab=t;nav();if(t==="cards")startFC();else if(t==="practice")startPR();else rules()}
+function setCat(c){cat=c;nav();tab==="cards"?startFC():startPR()}
+
+function rules(){
+  const tags=(a,k)=>a.map(x=>`<span class="pill ${k}">${x}</span>`).join("");
+  $("view").innerHTML=legend()+`<div class="grid">
+  <div class="card"><div class="big" style="color:#2EC4B6">1</div><h2>Compounds</h2><p>Two roots that each mean something on their own.</p>${pills([["thunder","R"],["storm","R"]])}<p class="muted">Nouns are morphemes that have a meaning when they stand alone.</p></div>
+  <div class="card"><div class="big" style="color:#B388EB">2</div><h2>Latin roots</h2><p>Real roots, but they can't stand alone in English.</p><div class="tags">${tags(["-duce","-ceive","-ject","-vert","-dict","-cept","-nat"],"B")}</div></div>
+  <div class="card"><div class="big" style="color:#FF6B6B">3</div><h2>Affixes</h2><p>Prefixes and suffixes. They can't stand alone either.</p><p class="muted">Suffixes</p><div class="tags">${tags(["-er","-or","-ist","-ness","-sion","-tion","-s","-ed","-ment","-able","-hood","-ship","-est","-ive"],"S")}</div><p class="muted">Prefixes</p><div class="tags">${tags(["re-","intro-","trans-","un-","co-","im-","ir-","dis-","il-","in-","non-","de-","pre-","post-","inter-","sub-","super-","under-","over-","extra-","bi-","tri-","multi-","en-","pro-"],"P")}</div></div></div>
+  <div class="card"><h2>Ask yourself</h2><p>Can it stand alone and mean something? → <b>Free root</b><br>Two roots side by side? → <b>Compound</b><br>A Latin chunk like -duce, -ceive, -vert? → <b>Bound root</b><br>Can't stand alone in English? → <b>Affix</b></p><div class="row"><button class="btn" onclick="go('cards')">Try flashcards</button><button class="btn alt" onclick="go('practice')">Start practice</button></div></div>`;
+}
+
+let fc={deck:[],flip:false,total:0};
+function startFC(){fc.deck=shuffle(pool());fc.total=fc.deck.length;fc.flip=false;renderFC()}
+function renderFC(){
+  const v=$("view");
+  if(!fc.deck.length){v.innerHTML=`<div class="card fc"><div class="w">🎉</div><p>You went through all ${fc.total} cards!</p><button class="btn" onclick="startFC()">Restart</button></div>`;return}
+  const d=fc.deck[0],done=fc.total-fc.deck.length;
+  v.innerHTML=`<div class="muted">${done} of ${fc.total} mastered</div><div class="bar"><i style="width:${100*done/fc.total}%"></i></div>
+  <div class="card fc" onclick="fc.flip=!fc.flip;renderFC()">${fc.flip?`<div class="w" style="font-size:22px;margin-bottom:8px">${d.w}</div><div>${pills(d.parts)}</div>`:`<div class="w">${d.w}</div><p class="muted">Split it in your head, then tap to check</p>`}</div>
+  ${legend()}<div class="row"><button class="btn" onclick="fcNext(true)">Got it ✓</button><button class="btn alt" onclick="fcNext(false)">Again ↻</button></div>`;
+}
+function fcNext(ok){const d=fc.deck.shift();if(!ok)fc.deck.push(d);fc.flip=false;renderFC()}
+
+let pr={};
+function startPR(){pr={q:shuffle(pool()),i:0,sel:[],checked:false,score:0,streak:0,best:0,ok:false,hint:false};renderPR()}
+function pick(j,k){if(pr.checked)return;pr.sel[j]=k;renderPR()}
+function check(){
+  const d=pr.q[pr.i];pr.checked=true;pr.ok=d.parts.every((p,j)=>pr.sel[j]===p[1]);
+  if(pr.ok){pr.score++;pr.streak++;pr.best=Math.max(pr.best,pr.streak)}else pr.streak=0;renderPR();
+}
+function nextQ(){pr.i++;pr.sel=[];pr.checked=false;pr.hint=false;renderPR()}
+function renderPR(){
+  const v=$("view");
+  if(pr.i>=pr.q.length){v.innerHTML=`<div class="card fc"><div class="w">🏁</div><h2>${pr.score} / ${pr.q.length} perfect words</h2><p class="muted">Best streak: ${pr.best}</p><button class="btn" onclick="startPR()">Play again</button></div>`;return}
+  const d=pr.q[pr.i];
+  const cols=d.parts.map(([t,k],j)=>`<div class="part"><span class="pill">${t}</span>${Object.keys(L).map(c=>{
+    let cls=pr.sel[j]===c?"sel":"";
+    if(pr.checked){if(c===k)cls="ok";else if(pr.sel[j]===c)cls="bad"}
+    return `<button class="${cls}" onclick="pick(${j},'${c}')">${L[c]}</button>`}).join("")}</div>`).join("");
+  let fb="";
+  if(pr.checked){
+    const wrong=d.parts.filter((p,j)=>pr.sel[j]!==p[1]);
+    fb=`<div class="fb">${pr.ok?"✅ Perfect! ":"❌ Not quite. "}<div style="margin:6px 0">${d.w} = ${pills(d.parts)}</div>${wrong.map(([t,k])=>`<div><b>${t}</b> is a ${L[k].toLowerCase()}: ${WHY[k]}</div>`).join("")}</div>`;
+  }
+  v.innerHTML=`<div class="stats"><span>Score ${pr.score}</span><span>🔥 Streak ${pr.streak}</span><span class="muted" style="margin-left:auto;font-weight:400">${pr.i+1} / ${pr.q.length}</span></div>
+  <div class="card"><div class="muted">Label every piece of</div><div class="big">${d.w}</div><div class="parts">${cols}</div>
+  ${pr.hint&&!pr.checked?`<div class="fb">Can it stand alone and mean something? Is it a Latin chunk like -duce or -vert? Does it attach at the front or the end?</div>`:""}${fb}
+  <div class="row">${pr.checked?`<button class="btn" onclick="nextQ()">Next →</button>`:`<button class="btn" ${d.parts.every((p,j)=>pr.sel[j])?"":"disabled"} onclick="check()">Check</button><button class="btn alt" onclick="pr.hint=!pr.hint;renderPR()">💡 Hint</button>`}</div></div>${legend()}`;
+}
+nav();rules();
+</script></body></html>
